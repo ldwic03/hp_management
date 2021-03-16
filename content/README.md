@@ -1,4 +1,4 @@
-# サイト内容（contentディレクトリ）の内容と書き方
+# サイト内容（contentディレクトリ）の内容・書き方および投稿・更新方法
 
 サイトのソースはこのディレクトリ (`content`) に入っている。
 
@@ -12,59 +12,92 @@ $ cd hp_management/content
 
 ### 新しいページ・記事の作り方
 
-`content` ディレクトリに移動し、独自スクリプト `create.sh` で雛形を作ります。
+`content` ディレクトリに移動し、Pythonスクリプト `create.py` で雛形を作ります。
 
 あるいは、 (その方が楽であれば) `content/template.md` を手動でコピーして編集してもかまいません。
 
-#### page (固定ページ) を作成する場合
-
-```bash
-$ cd hp_management/content
-$ sh create.sh (filename)
-```
-
-`(filename)` に生成するファイル名を指定します (内容に応じて適切に)。
-`content/pages/` の下にメタデータ入りのMarkdownファイルが生成されます。
-
-これに内容を追記します。htmlも認識されます。
-
-#### article (ニュースやブログ記事) を作成する場合
-
 ``` bash
 $ cd hp_management/content
-$ sh create.sh (filename) (category) (tags)
+$ python create.py
 ```
 
-Pageの場合と同じコマンド。(category)を指定するとarticleになり、`content/articles/(schoolyear)/(category)/(filename).md`として作成されます。
+質問に従って必要項目を順に入力します。
+ブログ記事の場合、`date` (日付) と `slug` (ファイル名) は入力必須。
+その他は全部デフォルトにして後から書き換えるのでも構いません。
+ファイルは `content/articles/(schoolyear)/(category)/(slug).md` として作成されます。
 
-- (category) はNewsかBlog。
-  (category) にpageまたはpagesを指定するとpageになる。
-- (tags) は省略可能、ただしarticleの場合は編集の際に必ず入れること。
-  (この仕様は変更するかも。)
-- (category) は各ファイルのメタデータには記載されない。
-  mdファイルを入れるディレクトリの名前がカテゴリとして認識される。
-  (記載した場合はそちらが優先されるが、記載しないでください。)
-- 自動作成されたファイルは `Title` と `Author` が空欄なので、埋める。
-- `Author` の下を1行空け、その後にMarkdown原稿を貼り付ける。
+- (category) はデフォルトで `blog`。
+  他に `news`, `page` (サイトの固定ページ) を指定できる。
+- (schoolyear) は `date` から自動で計算される。
+  例えば `date` が `2020.03.15` なら (schoolyear) は `2019sy`。
+- 質問に答える代わりに、`--slug`, `--date` などのコマンドラインオプションを使うことも可能。
+  詳細は `$ python create.py --help` とすると出てくる。
+- `Author:` の下を1行空け、その後にMarkdown原稿を貼り付ける。
   タイトル (`#` タグ) は自動生成されるので削り、分節タグは原則全て `##` 以下を使う。
+  原稿ファイルがすでにある場合、`--content` オプションでファイルを渡すこともできる。
+- `content` に既存の `.md` ファイルを指定すると、タイトルと本文が読み込まれる。
+`.ipynb` ファイルを指定すると、`.ipynb` ファイルがコピーされ、`.nbdata` ファイルが作成される。 
 
-##### Jupyter Notebookの扱い
+#### サマリーについて
+記事一覧に表示される各記事のサマリーは、記事本文冒頭の140文字まで（タグ・空白・改行など除く）が使用されます。
 
-jupyter notebookに関しては他の記事（mdファイル）と同じ場所に入れ、さらに同じ場所にメタデータファイル（`myarticle.ipynb` の場合は`myarticle.nbdata`）を置いてmdファイルと同様のメタデータを書きます。
-`articles/2018sy/Blog` の `lorentz.ipynb` および `lorentz.nbdata` を参考にしてください。
+(サマリーに関する以下の機能には現在バグがあり、ちゃんと動作しない場合があります。
+指定しても今は動作しないだけで無害なので、指定できた方がいい場合は指定しておいてください。)
+
+ただし、
+
+- 記事原稿ファイルのメタデータに `Summary:` を加えると、そちらがサマリーとして優先的に使用されます。
+- サマリーを本文中の特定範囲 (140文字以内) にしたい場合は、
+```
+<!-- PELICAN_BEGIN_SUMMARY -->
+```
+```
+<!-- PELICAN_END_SUMMARY -->
+```
+の2行を本文中に挿入してください。
+(常にセットである必要はなく、いずれも省略可能です。)
+例えば本文を
+```
+## はじめに
+<!-- PELICAN_BEGIN_SUMMARY -->
+今回はすごいことをやってみました。
+<!-- PELICAN_END_SUMMARY -->
+## すごいことの詳細
+とてもすごい。どこがとてもすごいかというと....
+```
+のようにすると、サマリーは「今回はすごいことをやってみました。」となります。
+`<!-- ... -->` は本文中ではコメントとして無視されます (表示されません)。
+
+#### Jupyter Notebookの扱い
+
+Jupyter Notebookに関しては他の記事（`.md`ファイル）と同じ場所に入れ、さらに同じ場所にメタデータファイル（`myarticle.ipynb` の場合は`myarticle.nbdata`）を置いてmdファイルと同様のメタデータを書きます。
+既存の記事がいくつもあるので、参考にしてください。
+
+変換されたhtmlが記事本文となるほか、元のNotebookをGoogle Colabで開けるリンクも付加されます。
+`.ipynb`ファイル内の記事タイトル (`#`タグ) は変換時に無視されるので、予め削除するなどの細工は必要ありません (Notebookとしての質を優先しましょう)。
 
 #### タグの付け方
-現在は10タグ設定している。基本的にはこの中から最も当てはまるタグを1つ選ぶ。ただし、新しい分野も歓迎します（相談してください）。また、大文字・小文字等の違いに注意。
+現在、以下のようなタグを設定している。
+基本的にはこの中から、最も当てはまるタグを1つまたは2つ程度選ぶ。
+ただし、新しい分野・タグも歓迎します（相談してください）。
+また、大文字・小文字等の違いに注意。
 - `Bioinformatics`：バイオインフォマティクス関連
 - `Machine Learning`：機械学習関連 (Deep Learningなど)
 - `Statistics`：統計学（機械学習との違いは若干曖昧）
 - `Data Science Competition`：KaggleやSignateなど
+- `ハードウェア`：GPU/CPUほか、研究用のハードウェアに関する話題
+- `Simulation`：シミュレーション研究など
+- `自動化`：Pythonほかを使った自動化関連
 - `Python`：Pythonに関すること（上記に当てはまらない場合）
 - `Shell script`：シェルスクリプトの使い方など
 - `GitHub`：Githubの使い方など
+- `Unix`：Unix関係
 - `競技プログラミング`：Atcoderなど
 - `論文関連`：論文の探し方、書き方、管理の仕方などのtips
+- `論文まとめ`：論文まとめノートなど
 - `海外留学`：海外留学の報告など
+- `検定試験`：統計検定、情報処理技術者試験、バイオインフォ技術者認定試験など
+- `勉強会`：勉強会資料の公開など
 
 #### リンクなど
 
@@ -75,6 +108,7 @@ jupyter notebookに関しては他の記事（mdファイル）と同じ場所�
 - その後、リンクの頭に「おまじない」を入れる。
   - 画像など、「その記事に付随して初めてアップするファイル」は`{attach}`
   - すでに存在している他記事などの場合は`{filename}`
+  - すでに存在しているファイルで、画像など変換されないものは`{static}`
 
 という順序になります。
 以下、具体例です。
@@ -92,13 +126,13 @@ content/articles/(schoolyear)/(category)/images/(filename)_figs/(imagefile)
 例えば、`sugoikiji.md` に画像ファイル `sugoigazou.png` を読み込みたい場合、記事本体が
 
 ```markdown
-content/articles/2020sy/Blog/sugoikiji.md
+content/articles/2020sy/blog/sugoikiji.md
 ```
 
 であれば、画像ファイルは
 
 ```markdown
-content/articles/2020sy/Blog/images/sugoikiji_figs/sugoigazou.png
+content/articles/2020sy/blog/images/sugoikiji_figs/sugoigazou.png
 ```
 
 のようにします。
@@ -125,24 +159,42 @@ content/articles/2020sy/Blog/images/sugoikiji_figs/sugoigazou.png
 過年度の記事であれば、少しややこしいですが、ディレクトリを辿って
 
 ```markdown
-[以前の記事]({filename}../../2019sy/Blog/old_article.md)
+[以前の記事]({filename}../../2019sy/blog/old_article.md)
 <!-- 相対パス指定 -->
 ```
 
 または
 
 ```markdown
-[以前の記事]({filename}/articles/2019sy/Blog/old_article.md)
+[以前の記事]({filename}/articles/2019sy/blog/old_article.md)
 <!-- content/ をトップとする絶対パス指定 -->
 ```
 
 のようにします。
 
-### 記事を投稿する方法
+また、例えば前の記事で使った画像を今回の記事にも貼りたい場合は
 
-「フォークからのプルリクエスト」によって行います。
+```markdown
+![前回の画像]({static}./images/my_previous_article_figs/sugoigazou.png)
+```
 
-以下簡単に。各段階での詳しいことはネット上にもたくさんありますが、わからなければSlackで質問してください。
+のようにします。
+
+## 記事を投稿する方法
+
+投稿はGitHubのプルリクエストによります。
+方法は2つあります。
+
+方法1は、この `github.com/oumpy` のメンバーに登録されている必要がありますが、手順が比較的簡単で、何よりプレビューも使えます。
+なので、**推奨は方法1**です。
+
+未登録の場合等でも方法2は可能です。
+(ただ、それをやるくらいなら登録を依頼してもらう方が普通は楽です。)
+
+### 方法1 (oumpy上に直接プッシュする方法)
+
+やり方を一通り簡単に。
+各段階での基本的なことはネット上にもたくさんありますが、本サイト固有の部分もあるので、わからなければSlackで質問してください。
 
 #### 事前に必要な設定
 
@@ -150,42 +202,101 @@ content/articles/2020sy/Blog/images/sugoikiji_figs/sugoigazou.png
 
 （すでにGitHubを使っている人は飛ばして次へ）
 
-- GitHub アカウント ( `hoge` とする。以下自分のものに読み替え) と Gitクライアント (Source Treeなど) を設定する。
+- GitHub アカウント ( `hoge` とする。以下自分のものに読み替え) と Gitクライアント (SourceTreeなど) を設定する。
 - 自分でGitHub上に作ったレポジトリにプッシュできることを確認する。
   認証関係はハマりどころなので資料を確認しながら慎重に。
 
+##### アカウント登録依頼
+
+`github.com/oumpy` へのメンバー登録を管理者に依頼する。
+招待メールが送られてくるので受諾の手続きをする。
+
 ##### 本レポジトリに関する設定
 
-- GitHubの `oumpy/hp_management` で、右上にある「fork」から自分のアカウントにフォーク (コピー) を作成する。
-- `hoge/hp_management` をクローンしてローカルレポジトリを作成。
-  リモートレポジトリ (`hoge/hp_management`) の名前はデフォルトで `origin` となる。
-- `oumpy/hp_management` を2つ目のリモートレポジトリとして設定。名前は `upstream` とする。
-  - 名前は `upstream` / `origin` の代わりに、oumpyの方を `oumpy` 、自分のものを `hoge` として区別してもよい。
-    こちらはGitHub上での呼称と整合する。お好みで。
+- `oumpy/hp_management` をクローンしてローカルレポジトリを作成。
+  リモートレポジトリ (`oumpy/hp_management`) の名前はデフォルトで `origin` となる。
+
+  （本README冒頭のコマンド。実行済みの場合はそのままでOK。）
+
+- リモートレポジトリの名前は `origin` のままでもよいが、`oumpy` と改称しておくとGitHub上での呼称と整合するのでわかりやすい。
+  以下では `oumpy` と名づけたものとする。
 
 #### 記事投稿ごとにやること
 
-- masterブランチを `upstream/master` からプルして `master` と `upstream/master` を一致させた後、この点に新しいブランチを作成。
-  ここでは `sugoikiji` とする。
-- 書いた記事ファイルをブランチ `sugoikiji` にコミットする。
+- masterブランチを `oumpy/master` からプルして `master` と `oumpy/master` を一致させた後、この点に新しいブランチを作成。
+  **この時、名前の先頭に `article/` をつける。**
+  ここでは `article/sugoikiji` とする。
+- 書いた記事ファイルをブランチ `article/sugoikiji` にコミットする。
   記事タイトルなどをコミットコメントとして書く。
-- ブランチ `sugoikiji` を自分のレポジトリにプッシュする ( ブランチ `origin/sugoikiji` ができる ) 。
-- webブラウザで自分のレポジトリまたはoumpyの元レポジトリに行き、自分の `sugoikiji` から`oumpy/master` へのプルリクエストを作成。
-必要な説明などを同時にコメントとして書く。
-記事の投稿・修正の場合、`article` ラベルをつける。
+- ブランチ `article/sugoikiji` をリモートレポジトリ `oumpy` にプッシュする ( ブランチ `oumpy/article/sugoikiji` ができる ) 。
+  (ここでブランチ名が正しくないと、権限がないと言われてプッシュに失敗します。)
+
+- webブラウザで`https://github.com/oumpy/hp_management/`に行き、 `article/sugoikiji` から`master` へのプルリクエストを作成。
+  必要な説明などを同時にコメントとして書く。
+  作成が完了すると、ラベル `article` が自動的に付けられる。
+  またプレビューへのリンクが自動投稿される。
 
 通常は以上でやることは終わりです。
 
 - 問題なければ幹部が承認し、アップされます。
   また「マージされました」というお知らせがアカウントに紐付けられたメールアドレスにGitHubから送られます。
-- エラーその他で修正が必要で、本人に依頼する必要がある場合は修正リクエストが発行されます。その場合もメールでお知らせが送られます。
+- エラーや内容面の修正が必要で、著者本人に依頼の必要がある場合は修正リクエストが発行されます。その場合もメールでお知らせが送られます。
+
+#### 記事のプレビュー
+
+この方法1では、プルリクエストの前、ブランチをリモートにプッシュした時点で、そのブランチの内容から、サイトのプレビューが自動的に生成される。
+今の場合であれば、 `https://oumpy.github.io/previews/refs/heads/article/sugoikiji/` にブラウザでアクセスすると、プレビューを見ることができる。
+上記の通り、プルリクエストを作成すると、このリンクは当該プルリクエストのページに自動で投稿される。
+
+ブランチをプッシュしてからプレビューがアップされるまでは通常1分〜数分程度 (場合によっては10分以上かかることなどもある)。
+同じブランチを更新してプッシュするたびに、プレビューも更新される。
+またリモートブランチを削除するとプレビューも削除される (現在、ここは正常動作していない)。
+
+### 方法その2 (レポジトリのフォークを使う方法)
+
+「フォークからのプルリクエスト」によって行います。
+
+#### 事前に必要な設定
+
+##### Git/GitHub一般の設定
+
+方法1と同じです。すでにGitHubを使っている場合は必要ありません。
+
+##### 本レポジトリに関する設定
+
+- 方法1と同様、`oumpy/hp_management` をクローンしてローカルレポジトリを作成。
+  リモートレポジトリ (`oumpy/hp_management`) の名前はデフォルトで `origin` となる。
+
+  （本README冒頭のコマンド。実行済みの場合はそのままでOK。）
+
+- GitHubの `oumpy/hp_management` で、右上にある「fork」から自分のアカウントにフォーク (コピー) を作成する。
+
+- `hoge/hp_management` を2つ目のリモートレポジトリとして設定。2つのリモートレポジトリには適切な名前をつけて区別する。
+  
+  - `hoge/ph_mangement` を `origin`、`oumpy/hp_management` を  `upstream` 。
+  - `hoge/ph_mangement` を `hoge`、`oumpy/hp_management` を  `oumpy` 。こちらはGitHub上での呼称と整合する。
+  
+  以下では後者で説明する。
+
+#### 記事投稿ごとにやること
+
+- masterブランチを `oumpy/master` からプルして `master` と `oumpy/master` を一致させた後、この点に新しいブランチを作成。
+  ここでは `sugoikiji` とする。
+- 書いた記事ファイルをブランチ `sugoikiji` にコミットする。
+  記事タイトルなどをコミットコメントとして書く。
+- ブランチ `sugoikiji` を自分のレポジトリにプッシュする ( ブランチ `hoge/sugoikiji` ができる ) 。
+- webブラウザで自分のレポジトリまたはoumpyの元レポジトリに行き、自分の `sugoikiji` から`oumpy/master` へのプルリクエストを作成。
+  必要な説明などを同時にコメントとして書く。
+  作成が完了すると、ラベル `article` が自動的に付けられる。
+
+通常は以上でやることは終わりです。
+
+その後の承認・マージや修正依頼については方法1の場合と同じです。
 
 ## サイト全体の情報設定
 
-`content/contentconf.py` に、サイト表題・副題やリンク先などの情報が書かれている。**この設定は `pelicanconf.py` の一部であり、また `pelicanconf.py` 本体の記述よりも優先される。**
+`content/contentconf.py` に、サイト表題・副題やリンク先などの情報が書かれている。
+**この設定は `pelicanconf.py` の一部であり、また `pelicanconf.py` 本体の記述よりも優先される。**
 
 同様に `content/contentpublishconf.py` もあり、テスト時にはない方がよい設定を記述する。
 
-## ToDo
-
-- Member,Calenderなどは必要か？

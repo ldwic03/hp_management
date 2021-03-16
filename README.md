@@ -11,12 +11,12 @@
   完成したら、管理用レポジトリにプッシュするとともに、出力用レポジトリにもoutputの中身をpushする。この繰り返し。
    (後述の自動更新システムを使えば、日常更新作業で出力用レポジトリを手動で扱う必要はない。)
 
-- 会員は本レポジトリ (hp_management) を自分のGitHubアカウントにfork、`content/`下のMarkdownファイルを編集・追加してプルリクエストを送ることを推奨。
+- 会員はアカウントを`oumpy`オーガニゼーションのメンバーに登録し、Markdown/Jupyter notebookファイルを`content/`下に追加してプルリクエストを送ることで、記事を投稿できる。
 
-- 以下は主に管理者・開発者向けの技術的内容です。**記事更新の方法などは`content/README.md`を参照** のこと。
+- 以下は主に管理者・開発者向けの技術的内容です。**記事投稿の方法などは`content/README.md`を参照** のこと。
 以下の内容をやる必要はありません。
 
-  Markdownとgitの使い方は本HP関係なく必須科目です。勉強しましょう。
+  (Markdownとgitの使い方は本HP関係なく必須科目です。勉強しましょう。)
 
 ## 導入した機能など
 
@@ -93,28 +93,27 @@ SITEREPOSITORY = 'https://github.com/oumpy/oumpy.github.io.git'
 
 環境：Python 3.6以降
 
-```bash
-$ pip install pelican Markdown nbconvert
-```
-
-または `hp_management/` 直下で
+`hp_management/` 直下で
 
 ```bash
 $ pip install -r requirements.txt
 ```
 
-でインストールできる。
+とすると、pelicanほか必要なパッケージを一括インストールできる。
 
 ### 更新のアップ
 
 #### [ブログ管理用のレポジトリ](https://github.com/oumpy/hp_management)
 
-通常のレポジトリ管理を行います。
+プルリクエストベースでのレポジトリ管理を行います。
+- 投稿・開発の基本は `master` ブランチへのプルリクエスト。
+  マージにはレビュー権限のある人の承認が必要。
+- 記事投稿もシステム開発も基本は同じ。
+  使い捨てブランチから `master` にプルリクを行う。
+- 原則として記事投稿は幹部が、固定ページやニュースは正副代表が、システム設定はメンテナが、レビュー・承認して `master` にマージする。
+  (`executives`, `hp_maintainers` などのチームと `CODEOWNERS` によりレビュー権限設定。)
 
-- サイト内容(`content`ディレクトリ内)：`content`ブランチへのプルリクエストを受け付けます。
-- それ以外：開発参加者間で適切に管理します。
-
-#### [出力用レポジトリ](https://github.com/oumpy/oumpy.github.io)へのpush
+#### [出力用レポジトリ](https://github.com/oumpy/oumpy.github.io)へのpush (手動で行う場合)
 
 このレポジトリは出力にすぎないので、あまり真面目な変更履歴管理は行いません。
 masterブランチに全て上書きしていく形でOKです。
@@ -140,11 +139,23 @@ $ sh tools/updatesite.sh "Yabai update"
 
 このスクリプト `tools/updatesite.sh` は主に自動push用に用意されていますが、動作を理解していれば手動で用いても問題ありません。
 
-## Webhookによる自動更新機構
+## 自動更新 & プレビュー機構
+### GitHub Actions (デフォルト)
+#### 自動更新
+本レポジトリのmasterブランチにプルリクエストがマージされると、GitHubのシステム上でソースが自動的にコンパイルされ、サイトにプッシュされます。
+この指示の実体 (ワークフロー) は `.github/workflow/deploy_on_site.yml` です。
 
-webサーバ上にローカルレポジトリを設置することで、GitHubのwebhook機能を用いてサイトを自動更新する機能を搭載しています。
+#### プレビュー自動作成
+masterブランチ以外のブランチ (仮に `article/sugoikiji` とする) を更新 (プッシュ) すると、やはりGitHubのシステム上でソースが自動的ににコンパイルされて
+https://oumpy.github.io/previews/refs/heads/article/sugoikiji/ にアップされます。
+ブランチを削除するとプレビューも削除されます。
+この指示の実体 (ワークフロー) は `.github/workflow/preview.yml` / `.github/workflow/delete_preview.yml` です。
 
-### 本機能を使用する方法
+### Webhook と外部サーバを用いた機構
+webサーバ上にローカルレポジトリを設置することで、GitHubのwebhook機能を用いてサイトを自動更新/プレビューすることができます。
+ただしプレビューは任意のブランチのプッシュで任意のコードを実行できるので、他用途と兼用しているサーバ上での使用は非推奨です。
+
+#### 本機能を使用する方法
 
 1. webサーバ上の適当なディレクトリ（webからアクセスできないところ）にhp_managementを正しく設置。
 
@@ -166,22 +177,6 @@ secret = b'xyzabc....'
 
 5. GitHubの本レポジトリでwebhookを設定する。
    cgiのURL (http://www.example.io/cgi-bin/deploy.cgi) とsecretを設定し、`content type` に `application/json`、また "Just the push event." を選択。
+   自動更新のみの場合は対象を `master` ブランチ（推奨）、プレビューも使う場合は全てのブランチにする。
 
-以上により、本レポジトリ (hp_management) のmasterブランチ更新を自動検出して`tools/updatesite.sh` が実行されます。
-
-## 課題
-### 管理システム
-
-- ほぼ完成した？
-
-- `content` を将来レポジトリ分離すべきか。  
-
-  （当初はいずれ分離を想定していた。ただCODEOWNERS管理でも十分、かもしれない。）
-
-### HPシステム・テーマ
-
-- article一覧ページの改善
-
-### 記事(article)類
-
-- 本サイトで完結できるかの検討研究
+以上により、本レポジトリ (hp_management) のブランチ更新を自動検出して`tools/updatesite.sh` が実行されます。

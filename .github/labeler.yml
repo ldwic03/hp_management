@@ -1,0 +1,14 @@
+article:
+- content/articles/*/blog/**/*
+page/news:
+- content/articles/*/news/**/*
+- content/pages/**/*
+theme:
+- theme/**/*
+system:
+- .github/**/*
+- myplugins/**/*
+- tools/**/*
+document:
+- README.md
+- content/README.md

@@ -1,3 +1,7 @@
 pelican
 Markdown
-nbconvert
+nbconvert==5.6.1
+IPython
+beautifulsoup4
+requests
+libsass

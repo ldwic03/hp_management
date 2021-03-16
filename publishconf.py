@@ -17,4 +17,16 @@ from pelicanconf import *
 
 # DELETE_OUTPUT_DIRECTORY = True
 
+# plugins which are applied only on publish
+PLUGINS += [
+    'sitemap',
+]
+
+# Add robots.txt
+STATIC_PATHS += ['publish']
+ROBOTS = 'robots.txt'
+EXTRA_PATH_METADATA.update({
+    'publish/' + ROBOTS: {'path': ROBOTS},
+})
+
 from content.contentpublishconf import *

@@ -1,29 +1,9 @@
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.4/css/all.css">
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-<p class="pagetop"><a href="#wrap"></a></p>
-<script>
-$(document).ready(function() {
-    var pagetop = $('.pagetop');
-    $(window).scroll(function () {
-        if ($(this).scrollTop() > 600) {
-            pagetop.fadeIn();
-        } else {
-            pagetop.fadeOut();
-            }
-        });
-        pagetop.click(function () {
-            $('body, html').animate({ scrollTop: 0 }, 500);
-                return false;
-    });
-});
-</script>
-
 <!-- colophon  -->
 <!-- Site built using Pelican.  Theme based on VoidyBootstrap. -->
-<address id="site-colophon" style="margin:0px;padding:5px">
+<address id="site-colophon" style="padding-top:0rem;padding-bottom:0.03rem;">
     <div class="text-center">
     <p class="text-dark" style="margin:0px">
-        © 2020 大阪大学医学部 Python会
+        © {{ COPYRIGHT_YEAR|default(2020) }} {{ COPYRIGHT_AUTHOR|default(AUTHOR) }}
     </p>
     <p class="text-muted">
     Site built using <a href="http://getpelican.com/" target="_blank">Pelican</a>
